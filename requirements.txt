@@ -1,1 +1,3 @@
-BOT_TOKEN=7605984218:AAEXnbUvDKEfkEQNOgktxa45SKTeJXJ-lW8
+python-telegram-bot==20.7
+python-dotenv==1.0.0
+feedparser==6.0.10
