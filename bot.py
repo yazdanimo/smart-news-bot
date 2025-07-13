@@ -8,7 +8,7 @@ from telegram.ext import (
 from db import is_duplicate, save_message
 
 load_dotenv()
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("8029865209:AAGsg6GSv6fFOxe9xsnRiBnay8UHiL8tALU")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
