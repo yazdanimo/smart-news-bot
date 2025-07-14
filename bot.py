@@ -1,3 +1,5 @@
+# bot.py
+
 import logging
 from telegram.ext import (
     ApplicationBuilder,
@@ -7,35 +9,29 @@ from telegram.ext import (
 from handlers import debug_all_messages, handle_channel_post
 from config import BOT_TOKEN, WEBHOOK_URL, PORT
 
-# تنظیمات لاگ
+# تنظیم لاگ
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
     level=logging.INFO
 )
 
 def main():
-    # ساخت اپلیکیشن تلگرام با توکن
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # 1) هندلر لاگ تمام پیام‌های متنی (کاربر در گروه/دایرکت و پست‌های کانال)
+    # لاگ همهٔ پیام‌های متنی
+    app.add_handler(MessageHandler(filters.TEXT, debug_all_messages))
+
+    # فقط پست‌های کانال (update.channel_post) را به handle_channel_post بده
     app.add_handler(
-        MessageHandler(filters.TEXT, debug_all_messages)
+        MessageHandler(filters.UpdateType.CHANNEL_POST, handle_channel_post)
     )
 
-    # 2) هندلر اختصاصی پست‌های کانال
-    app.add_handler(
-        MessageHandler(
-            filters.UpdateType.CHANNEL_POST & filters.TEXT,
-            handle_channel_post
-        )
-    )
-
-    # ست کردن وبهوک روی مسیر شامل توکن
+    # ست کردن وبهوک
     webhook_path = f"/{BOT_TOKEN}"
     full_webhook = f"{WEBHOOK_URL}{webhook_path}"
     logging.info(f"🔗 ست وبهوک روی {full_webhook}")
 
-    # اجرای وبهوک (یک سرور Tornado روی پورت مشخص)
+    # اجرا در حالت وبهوک
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
