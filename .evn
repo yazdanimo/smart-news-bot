@@ -1,4 +1,11 @@
-BOT_TOKEN=7605984218:AAEXnbUvDKEfkEQNOgktxa45SKTeJXJ-lW8
+# توکن ربات از BotFather
+BOT_TOKEN=YOUR_BOT_TOKEN_HERE
+
+# شناسه‌ی کانال (با -100 شروع می‌شود)
 CHANNEL_ID=-1002591939526
+
+# دامنه یا آدرس‌تان در Railway (بدون اسلش انتهایی)
 WEBHOOK_URL=https://web-production-259f1.up.railway.app
+
+# پورت پیش‌فرض
 PORT=8080
