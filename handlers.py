@@ -1,3 +1,5 @@
+# handlers.py
+
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -9,9 +11,8 @@ async def debug_all_messages(
     context: ContextTypes.DEFAULT_TYPE
 ):
     """
-    لاگ همهٔ پیام‌های متنی (شامل پیغام‌های کاربر و پست‌های کانال)
+    لاگ همهٔ پیام‌های متنی (کاربران در گروه/دایرکت و پست‌های کانال)
     """
-    # اگر update.message وجود دارد، از آن استفاده کن، وگرنه update.channel_post
     msg = update.message or update.channel_post
     if msg and msg.text:
         logging.info(f"[DEBUG] chat_id={msg.chat.id} ({msg.chat.type}): {msg.text}")
@@ -21,9 +22,8 @@ async def handle_channel_post(
     context: ContextTypes.DEFAULT_TYPE
 ):
     """
-    پردازش اختصاصی پست‌های کانال:
-    - اگر متن تکراری بود، حذفش کن
-    - در غیر این صورت، در SQLite ذخیره کن
+    - حذف پست تکراری کانال
+    - ثبت پست جدید کانال
     """
     post = update.channel_post
     if not post or not post.text or post.chat.id != CHANNEL_ID:
@@ -31,13 +31,11 @@ async def handle_channel_post(
 
     text = post.text.strip()
     if is_duplicate(text):
-        # حذف پیام تکراری
         await context.bot.delete_message(
             chat_id=CHANNEL_ID,
             message_id=post.message_id
         )
         logging.info(f"❌ حذف تکراری: {text}")
     else:
-        # ذخیره پیام جدید
         save_message(text)
         logging.info(f"✅ ثبت جدید: {text}")
