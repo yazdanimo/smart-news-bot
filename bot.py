@@ -1,3 +1,6 @@
+# سطرهای اول bot.py
+import os, sys
+print("=== BOOTSTRAP STARTED ===", file=sys.stdout, flush=True)
 import os
 import threading
 from dotenv import load_dotenv
