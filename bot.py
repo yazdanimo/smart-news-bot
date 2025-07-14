@@ -1,65 +1,49 @@
-import os
 import logging
-from dotenv import load_dotenv
+import threading
 from flask import Flask
+from telegram.ext import ApplicationBuilder, MessageHandler, ChannelPostHandler, filters
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    ContextTypes,
-    MessageHandler,
-    filters
+from config import BOT_TOKEN, CHANNEL_ID, WEBHOOK_URL, PORT
+from handlers import debug_all_messages, handle_channel_post
+
+# تنظیمات لاگ
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s: %(message)s",
+    level=logging.INFO
 )
-from db import is_duplicate, save_message
 
-# تنظیم لاگ
-logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO)
+# راه‌اندازی Flask برای keep-alive
+app_flask = Flask(__name__)
+@app_flask.route("/")
+def ping():
+    return "I'm alive!"
 
-# بارگذاری ENV
-load_dotenv()
-TOKEN       = os.getenv("BOT_TOKEN")
-CHANNEL_ID  = int(os.getenv("CHANNEL_ID"))
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "").rstrip("/")
-PORT        = int(os.getenv("PORT", 8080))
-
-if not WEBHOOK_URL:
-    raise RuntimeError("Missing environment variable WEBHOOK_URL")
-
-# هندلرها
-async def debug_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_message and update.effective_message.text:
-        logging.info(f"[DEBUG] {update.effective_message.chat.id}: {update.effective_message.text}")
-
-async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.effective_message
-    if not msg or not msg.text or msg.chat.id != CHANNEL_ID:
-        return
-
-    text = msg.text.strip()
-    if is_duplicate(text):
-        await context.bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
-        logging.info(f"❌ حذف تکراری: {text}")
-    else:
-        save_message(text)
-        logging.info(f"✅ ثبت جدید: {text}")
+def run_flask():
+    app_flask.run(host="0.0.0.0", port=PORT)
 
 def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT, debug_all_messages))
-    app.add_handler(
-        MessageHandler(filters.TEXT & filters.ChatType.CHANNEL, handle_channel_post)
-    )
+    # ساخت اپلیکیشن تلگرام
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    webhook_path = f"/{TOKEN}"
-    full_webhook = f"{WEBHOOK_URL}{webhook_path}"
-    logging.info(f"🔗 Setting webhook to {full_webhook}")
+    # ثبت هندلرها
+    application.add_handler(MessageHandler(filters.TEXT, debug_all_messages))
+    application.add_handler(ChannelPostHandler(handle_channel_post))
 
-    app.run_webhook(
+    # ست کردن webhook
+    path       = f"/{BOT_TOKEN}"
+    full_url   = f"{WEBHOOK_URL}{path}"
+    logging.info(f"🔗 Setting webhook to {full_url}")
+
+    # شروع وب‌هوک
+    application.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        url_path=TOKEN,
-        webhook_url=full_webhook
+        url_path=BOT_TOKEN,
+        webhook_url=full_url
     )
 
 if __name__ == "__main__":
     logging.info("🚀 Bot starting in webhook mode…")
+    # استارت Flask در یک ترد جدا
+    threading.Thread(target=run_flask, daemon=True).start()
     main()
