@@ -16,9 +16,7 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     text = msg.text.strip()
     if is_duplicate(text):
-        await context.bot.delete_message(
-            chat_id=CHANNEL_ID, message_id=msg.message_id
-        )
+        await context.bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
         logging.info(f"❌ حذف تکراری: {text}")
     else:
         save_message(text)
