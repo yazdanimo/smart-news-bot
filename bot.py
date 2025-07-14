@@ -1,32 +1,28 @@
-# bot.py
-
 import logging
-from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     MessageHandler,
-    filters,
-    ContextTypes
+    filters
 )
 from handlers import debug_all_messages, handle_channel_post
 from config import BOT_TOKEN, WEBHOOK_URL, PORT
 
-# تنظیمات پایه‌ی لاگ
+# تنظیمات لاگ
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
     level=logging.INFO
 )
 
 def main():
-    # ساخت اپلیکیشن با توکن
+    # ساخت اپلیکیشن
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # ۱) لاگ همه‌ی پیام‌های متنی (شامل پیام‌های کاربر در گروه/دایرکت)
+    # 1) لاگ همهٔ پیام‌های متنی
     app.add_handler(
         MessageHandler(filters.TEXT, debug_all_messages)
     )
 
-    # ۲) هندل کردن پست‌های کانال (update.channel_post)
+    # 2) هندل کردن پست‌های کانال
     app.add_handler(
         MessageHandler(
             filters.UpdateType.CHANNEL_POST & filters.TEXT,
@@ -34,16 +30,17 @@ def main():
         )
     )
 
-    # ست کردن وبهوک روی مسیر حاوی توکن
-    webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}"
-    logging.info(f"🔗 ست وبهوک روی {webhook_url}")
+    # ست‌کردن وبهوک
+    path       = f"/{BOT_TOKEN}"
+    full_url   = f"{WEBHOOK_URL}{path}"
+    logging.info(f"🔗 ست وبهوک روی {full_url}")
 
-    # اجرای وبهوک (تک سرور Tornado روی پورت مشخص)
+    # اجرای وبهوک (تک‌سرور Tornado روی پورت مشخص)
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         url_path=BOT_TOKEN,
-        webhook_url=webhook_url
+        webhook_url=full_url
     )
 
 if __name__ == "__main__":
