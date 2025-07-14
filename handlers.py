@@ -4,26 +4,7 @@ from telegram.ext import ContextTypes
 from db import is_duplicate, save_message
 from config import CHANNEL_ID
 
-async def debug_all_messages(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-    """
-    لاگ همهٔ پیام‌های متنی (کاربران در گروه/دایرکت)
-    """
-    msg = update.message or update.channel_post
-    if msg and msg.text:
-        logging.info(f"[DEBUG] chat_id={msg.chat.id} ({msg.chat.type}): {msg.text}")
-
-async def handle_channel_post(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-    """
-    پردازش پست‌های کانال:
-    - اگر تکراری بود، حذف شود
-    - در غیر این صورت، در DB ذخیره شود
-    """
+async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     post = update.channel_post
     if not post or not post.text or post.chat.id != CHANNEL_ID:
         return
