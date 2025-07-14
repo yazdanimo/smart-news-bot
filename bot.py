@@ -1,24 +1,20 @@
-import os
-import sys
-import threading
-from dotenv import load_dotenv
-from flask import Flask
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
-from db import is_duplicate, save_message
 import logging
+import threading
+from flask import Flask
+from telegram.ext import ApplicationBuilder, MessageHandler, filters
+from handlers import debug_all_messages, handle_channel_post
+from config import BOT_TOKEN, CHANNEL_ID, WEBHOOK_URL, PORT
+from dotenv import load_dotenv
 
-# این خط را قبلاً اضافه کردید
-print("=== BOOTSTRAP STARTED ===", flush=True)
-
-# این دو خط را بلافاصله بعدش اضافه کنید
-print("🚀 Flask server starting…", flush=True)
+# بارگذاری متغیرهای محیطی
 load_dotenv()
-TOKEN = os.getenv("BOT_TOKEN")
-CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
-PORT = int(os.getenv("PORT", 8080))
 
-# راه‌اندازی Flask
+# تنظیم لاگ
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO
+)
+
+# Flask برای keep-alive (اختیاری)
 app_flask = Flask(__name__)
 @app_flask.route("/")
 def ping():
@@ -27,22 +23,29 @@ def ping():
 def run_flask():
     app_flask.run(host="0.0.0.0", port=PORT)
 
-if __name__ == "__main__":
-    # استارت Flask در ترد جداگانه
-    threading.Thread(target=run_flask, daemon=True).start()
-    
-    # حتماً این print را ببینید
-    print("🚀 Flask server started", flush=True)
-
-    # ساخت اپلیکیشن تلگرام
-    app = ApplicationBuilder().token(TOKEN).build()
+def main():
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # ثبت هندلرها
-    app.add_handler(MessageHandler(filters.TEXT, debug_all_messages))
-    app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.CHANNEL, handle_channel_post))
+    application.add_handler(MessageHandler(filters.TEXT, debug_all_messages))
+    application.add_handler(
+        MessageHandler(filters.TEXT & filters.ChatType.CHANNEL, handle_channel_post)
+    )
 
-    # و این هم حتما باید لاگ شود
-    print("🚀 Bot is running...", flush=True)
+    # ست کردن وبهوک
+    path     = f"/{BOT_TOKEN}"
+    full_url = f"{WEBHOOK_URL}{path}"
+    logging.info(f"🔗 Setting webhook to {full_url}")
 
-    # شروع پُلیینگ
-    app.run_polling()
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=BOT_TOKEN,
+        webhook_url=full_url
+    )
+
+if __name__ == "__main__":
+    logging.info("🚀 Bot starting in webhook mode…")
+    # اگر از keep-alive Flask استفاده می‌کنید:
+    threading.Thread(target=run_flask, daemon=True).start()
+    main()
