@@ -1,8 +1,11 @@
 import sqlite3
 
+# اتصال به پایگاه داده‌ی SQLite
 conn = sqlite3.connect("messages.db", check_same_thread=False)
-c = conn.cursor()
-c.execute("""
+cursor = conn.cursor()
+
+# ایجاد جدول در صورت نبودن
+cursor.execute("""
     CREATE TABLE IF NOT EXISTS messages (
         text TEXT PRIMARY KEY
     )
@@ -10,10 +13,10 @@ c.execute("""
 conn.commit()
 
 def is_duplicate(text: str) -> bool:
-    c.execute("SELECT 1 FROM messages WHERE text=?", (text,))
-    return c.fetchone() is not None
+    cursor.execute("SELECT 1 FROM messages WHERE text = ?", (text,))
+    return cursor.fetchone() is not None
 
 def save_message(text: str):
-    c.execute("INSERT INTO messages (text) VALUES (?)", (text,))
+    cursor.execute("INSERT INTO messages (text) VALUES (?)", (text,))
     conn.commit()
     print(f"[DB] saved -> {text}", flush=True)
