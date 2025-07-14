@@ -1,11 +1,11 @@
 # Environment
 .env
 
-# Database
+# پایگاه داده
 messages.db
 
-# Python cache
+# پایتون کش
 __pycache__/
 
-# VS Code settings (اختیاری)
+# تنظیمات ادیتور (اختیاری)
 .vscode/
