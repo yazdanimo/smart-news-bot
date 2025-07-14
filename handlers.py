@@ -1,5 +1,3 @@
-# handlers.py
-
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -11,9 +9,9 @@ async def debug_all_messages(
     context: ContextTypes.DEFAULT_TYPE
 ):
     """
-    Log every incoming text (messages & channel posts) for debugging.
+    لاگ همهٔ پیام‌های متنی (کاربران در گروه/دایرکت)
     """
-    msg = update.effective_message
+    msg = update.message or update.channel_post
     if msg and msg.text:
         logging.info(f"[DEBUG] chat_id={msg.chat.id} ({msg.chat.type}): {msg.text}")
 
@@ -22,9 +20,9 @@ async def handle_channel_post(
     context: ContextTypes.DEFAULT_TYPE
 ):
     """
-    Process posts that appear in the configured channel:
-    - If text is duplicate, delete it.
-    - Otherwise, save it to the DB.
+    پردازش پست‌های کانال:
+    - اگر تکراری بود، حذف شود
+    - در غیر این صورت، در DB ذخیره شود
     """
     post = update.channel_post
     if not post or not post.text or post.chat.id != CHANNEL_ID:
