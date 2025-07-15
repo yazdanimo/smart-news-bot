@@ -1,31 +1,60 @@
-# db.py
-import sqlite3
-from config import DB_PATH
+# handlers.py
+import logging
+from telegram import Update
+from telegram.ext import ContextTypes, MessageHandler, filters
+from config import CHANNEL_ID, MODE
+from db import save_message, create_answer
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
-            text TEXT PRIMARY KEY,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-    conn.close()
+# تنظیم لاگر
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s: %(message)s",
+    level=logging.DEBUG,
+)
+logger = logging.getLogger(__name__)
 
-def save_message(text: str) -> bool:
-    init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    try:
-        cur.execute("INSERT INTO messages (text) VALUES (?)", (text,))
-        conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        conn.close()
+async def debug_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    لاگ تمام بروزرسانی‌ها برای دیباگ
+    (باید گروه 0 در bot.py با این هندلر رجیستر شده باشد)
+    """
+    logger.debug("GOT UPDATE: %s", update.to_dict())
 
-def create_answer(text: str) -> str:
-    return f"✅ دریافت شد: «{text}»"
+async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    رسیدگی به پیام‌های کانال:
+    - ذخیره‌ی متن جدید
+    - حذف تکراری یا ارسال پاسخ
+    """
+    # در حالت وبهوک پیام در update.channel_post قرار می‌گیرد
+    msg = update.channel_post or update.message
+    if not msg or msg.chat.id != CHANNEL_ID:
+        return
+
+    text = msg.text or msg.caption or ""
+    logger.debug(f"{CHANNEL_ID} raw text: {text}")
+
+    if save_message(text):
+        logger.info(f"✅ ثبت جدید: {text}")
+    else:
+        logger.info(f"❌ حذف تکراری: {text}")
+
+    # اگر حالت polling باشد، پیام اصلی حذف شود
+    if MODE == "polling":
+        try:
+            await context.bot.delete_message(
+                chat_id=CHANNEL_ID,
+                message_id=msg.message_id
+            )
+        except Exception as e:
+            logger.error(f"delete_message failed: {e}")
+    # در حالت webhook پاسخ ارسال می‌شود
+    else:
+        try:
+            answer = create_answer(text)
+            await context.bot.send_message(
+                chat_id=CHANNEL_ID,
+                text=answer,
+                reply_to_message_id=msg.message_id
+            )
+        except Exception as e:
+            logger.error(f"send_message failed: {e}")
