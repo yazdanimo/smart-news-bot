@@ -1,14 +1,17 @@
 # config.py
 import os
 
-# بارگذاری متغیرهای محیطی
-_raw_url   = os.getenv("WEBHOOK_URL", "")
-_raw_token = os.getenv("BOT_TOKEN", "")
+def clean_env(key: str) -> str:
+    """
+    بارگذاری و پاک‌سازی مقادیر محیطی:
+    حذف فاصله‌ها و کاراکترهای ; یا / اضافی ابتدای/انتهای رشته
+    """
+    raw = os.getenv(key, "")
+    return raw.strip().strip(";/")
 
-# پاک‌سازی انتهای رشته‌ها
-WEBHOOK_URL = _raw_url.rstrip(";/")
-BOT_TOKEN   = _raw_token.rstrip(";/")
-CHANNEL_ID  = int(os.getenv("CHANNEL_ID", "0"))
-MODE        = os.getenv("MODE", "webhook")
-PORT        = os.getenv("PORT", "8080")
-DB_PATH     = os.getenv("DB_PATH", "/tmp/messages.db")
+BOT_TOKEN   = clean_env("BOT_TOKEN")
+WEBHOOK_URL = clean_env("WEBHOOK_URL")
+CHANNEL_ID  = int(clean_env("CHANNEL_ID") or 0)
+MODE        = clean_env("MODE") or "webhook"
+PORT        = clean_env("PORT") or "8080"
+DB_PATH     = clean_env("DB_PATH") or "/tmp/messages.db"
