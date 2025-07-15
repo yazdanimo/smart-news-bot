@@ -4,7 +4,6 @@ from telegram.ext import ApplicationBuilder, MessageHandler, filters
 from config import BOT_TOKEN, CHANNEL_ID, MODE, WEBHOOK_URL, PORT
 from handlers import debug_all, handle_all
 
-# پیکربندی لاگر
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
     level=logging.DEBUG,
@@ -12,26 +11,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def main():
-    # ساخت اپ با توکن
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Handler دیباگ: همه آپدیت‌ها را چاپ می‌کند
+    # 1) لاگ همه‌ی آپدیت‌ها
     app.add_handler(
         MessageHandler(filters.ALL, debug_all),
         group=0
     )
 
-    # فیلتر برای پست‌های کانال
+    # 2) فقط پست‌های کانال
     channel_filter = filters.Chat(CHANNEL_ID) & (
         filters.TEXT | filters.UpdateType.CHANNEL_POST
     )
-
-    # Handler پردازش پست کانال
     app.add_handler(
         MessageHandler(channel_filter, handle_all)
     )
 
-    # انتخاب حالت اجرا
+    # 3) اجرا بر اساس MODE
     if MODE == "polling":
         logger.info("🔄 در حالت polling اجرا می‌شود")
         app.run_polling()
