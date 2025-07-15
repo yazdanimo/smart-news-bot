@@ -1,47 +1,47 @@
+# bot.py
 import logging
 from telegram.ext import ApplicationBuilder, MessageHandler, filters
-from handlers import handle_channel_post, debug_messages
-from config import BOT_TOKEN, CHANNEL_ID, WEBHOOK_URL, PORT
+from config import BOT_TOKEN, CHANNEL_ID, MODE, WEBHOOK_URL, PORT
+from handlers import debug_all, handle_all
 
-# تنظیم لاگ
+# پیکربندی لاگر
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
-    level=logging.INFO
+    level=logging.DEBUG,
 )
-logging.info(
-    f"Loaded config → BOT_TOKEN(len)={len(BOT_TOKEN)}, "
-    f"CHANNEL_ID={CHANNEL_ID}, "
-    f"WEBHOOK_URL={WEBHOOK_URL}, "
-    f"PORT={PORT}"
-)
+logger = logging.getLogger(__name__)
 
 def main():
+    # ساخت اپ با توکن
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # 1) هندلر اختصاصی پست‌های کانال
+    # Handler دیباگ: همه آپدیت‌ها را چاپ می‌کند
     app.add_handler(
-        MessageHandler(
-            filters.UpdateType.CHANNEL_POST & filters.TEXT,
-            handle_channel_post
+        MessageHandler(filters.ALL, debug_all),
+        group=0
+    )
+
+    # فیلتر برای پست‌های کانال
+    channel_filter = filters.Chat(CHANNEL_ID) & (
+        filters.TEXT | filters.UpdateType.CHANNEL_POST
+    )
+
+    # Handler پردازش پست کانال
+    app.add_handler(
+        MessageHandler(channel_filter, handle_all)
+    )
+
+    # انتخاب حالت اجرا
+    if MODE == "polling":
+        logger.info("🔄 در حالت polling اجرا می‌شود")
+        app.run_polling()
+    else:
+        logger.info("🚀 در حالت webhook اجرا می‌شود")
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=int(PORT),
+            webhook_url=f"{WEBHOOK_URL}/{BOT_TOKEN}"
         )
-    )
-
-    # 2) هندلر لاگ تمام پیام‌های متنی
-    app.add_handler(
-        MessageHandler(filters.TEXT, debug_messages)
-    )
-
-    # ست کردن وبهوک
-    webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}"
-    logging.info(f"🔗 Set webhook → {webhook_url}")
-
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=BOT_TOKEN,
-        webhook_url=webhook_url
-    )
 
 if __name__ == "__main__":
-    logging.info("🚀 Starting webhook…")
     main()
