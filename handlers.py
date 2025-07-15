@@ -1,60 +1,32 @@
-# handlers.py
-import logging
-from telegram import Update
-from telegram.ext import ContextTypes, MessageHandler, filters
-from config import CHANNEL_ID, MODE
-from db import save_message, create_answer
+import os
+from telegram import Update, Bot
+from telegram.ext import Dispatcher, MessageHandler, Filters
+from flask import Flask, request
 
-# تنظیم لاگر
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s: %(message)s",
-    level=logging.DEBUG,
-)
-logger = logging.getLogger(__name__)
+TOKEN   = os.environ["TELEGRAM_TOKEN"]
+WEBHOOK = f"/{TOKEN}"
+PORT    = int(os.environ.get("PORT", 8443))
 
-async def debug_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    لاگ تمام بروزرسانی‌ها برای دیباگ
-    (باید گروه 0 در bot.py با این هندلر رجیستر شده باشد)
-    """
-    logger.debug("GOT UPDATE: %s", update.to_dict())
+app = Flask(__name__)
+bot = Bot(token=TOKEN)
+dp  = Dispatcher(bot, update_queue=None, workers=0, use_context=True)
 
-async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    رسیدگی به پیام‌های کانال:
-    - ذخیره‌ی متن جدید
-    - حذف تکراری یا ارسال پاسخ
-    """
-    # در حالت وبهوک پیام در update.channel_post قرار می‌گیرد
-    msg = update.channel_post or update.message
-    if not msg or msg.chat.id != CHANNEL_ID:
-        return
+# یک handler ساده برای تست
+def echo(update: Update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="🔔 دریافت شد!")
 
-    text = msg.text or msg.caption or ""
-    logger.debug(f"{CHANNEL_ID} raw text: {text}")
+dp.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
 
-    if save_message(text):
-        logger.info(f"✅ ثبت جدید: {text}")
-    else:
-        logger.info(f"❌ حذف تکراری: {text}")
+# این route باید دقیقاً برابر webhook URL باشد
+@app.route(WEBHOOK, methods=["POST"])
+def webhook_handler():
+    data = request.get_json(force=True)
+    update = Update.de_json(data, bot)
+    dp.process_update(update)
+    return "OK", 200
 
-    # اگر حالت polling باشد، پیام اصلی حذف شود
-    if MODE == "polling":
-        try:
-            await context.bot.delete_message(
-                chat_id=CHANNEL_ID,
-                message_id=msg.message_id
-            )
-        except Exception as e:
-            logger.error(f"delete_message failed: {e}")
-    # در حالت webhook پاسخ ارسال می‌شود
-    else:
-        try:
-            answer = create_answer(text)
-            await context.bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=answer,
-                reply_to_message_id=msg.message_id
-            )
-        except Exception as e:
-            logger.error(f"send_message failed: {e}")
+if __name__ == "__main__":
+    # ثبت وب‌هوک
+    bot.set_webhook(f"https://YOUR_APP_DOMAIN/{TOKEN}")
+    # راه‌اندازی سرور
+    app.run(host="0.0.0.0", port=PORT)
