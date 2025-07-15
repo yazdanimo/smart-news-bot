@@ -2,7 +2,6 @@
 import sqlite3
 from config import DB_PATH
 
-# ایجاد جدول در صورت عدم وجود
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
@@ -15,7 +14,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ذخیرهٔ پیام؛ برمی‌گرداند True اگر جدید بوده، False اگر تکراری
 def save_message(text: str) -> bool:
     init_db()
     conn = sqlite3.connect(DB_PATH)
@@ -29,6 +27,5 @@ def save_message(text: str) -> bool:
     finally:
         conn.close()
 
-# ساخت پاسخ ساده (این تابع را به دلخواه توسعه دهید)
 def create_answer(text: str) -> str:
     return f"✅ دریافت شد: «{text}»"
