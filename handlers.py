@@ -4,30 +4,38 @@ from telegram.ext import ContextTypes
 from config import CHANNEL_ID
 from db import is_duplicate, save_message
 
-async def debug_and_handle(
+async def handle_channel_post(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
     """
-    1) لاگ همهٔ پیام‌های متنی (دایرکت/گروه/کانال)
-    2) اگر پست کانال بود، تکرار را چک و حذف/ذخیره کند
+    ۱) لاگ پست‌های کانال (+ فیلتر CHANNEL_ID)
+    ۲) در صورت تکراری بودن حذف و در غیر این صورت ذخیره
     """
-    msg = update.message or update.channel_post
-    if not msg or not msg.text:
+    post = update.channel_post
+    if not post or not post.text or post.chat.id != CHANNEL_ID:
         return
 
-    # لاگ عمومی
-    logging.info(f"[DEBUG] chat_id={msg.chat.id} ({msg.chat.type}): {msg.text}")
+    text = post.text.strip()
+    logging.info(f"[DEBUG] chat_id={post.chat.id} (channel): {text}")
 
-    # اگر update.channel_post وجود دارد و از کانال ماست
-    if update.channel_post and msg.chat.id == CHANNEL_ID:
-        text = msg.text.strip()
-        if is_duplicate(text):
-            await context.bot.delete_message(
-                chat_id=CHANNEL_ID,
-                message_id=msg.message_id
-            )
-            logging.info(f"❌ حذف تکراری: {text}")
-        else:
-            save_message(text)
-            logging.info(f"✅ ثبت جدید: {text}")
+    if is_duplicate(text):
+        await context.bot.delete_message(
+            chat_id=CHANNEL_ID,
+            message_id=post.message_id
+        )
+        logging.info(f"❌ حذف تکراری: {text}")
+    else:
+        save_message(text)
+        logging.info(f"✅ ثبت جدید: {text}")
+
+async def debug_messages(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+    """
+    لاگ همهٔ پیام‌های متنی (دایرکت/گروه/کانال)
+    """
+    msg = update.message or update.channel_post
+    if msg and msg.text:
+        logging.info(f"[DEBUG] chat_id={msg.chat.id} ({msg.chat.type}): {msg.text}")
