@@ -3,7 +3,7 @@ import os
 # توکن ربات را از متغیر محیطی دریافت کنید
 TOKEN = os.getenv('TELEGRAM_TOKEN', 'YOUR_TELEGRAM_BOT_TOKEN')
 
-# آدرس پایه اپ شما (مثلا Railway)
+# آدرس پایه اپ شما (مثلاً Railway)
 BASE_URL = os.getenv('BASE_URL', 'https://web-production-3eaab.up.railway.app')
 
 # مسیر ذخیره‌سازی دیتابیس SQLite
