@@ -1,19 +1,9 @@
 import os
 
-# توکن بات
-BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
-
-# URL کامل وب‌هوک (مثلاً https://<app>.up.railway.app/<BOT_TOKEN>)
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
-
-# پورت اجرا (برای حالت وب‌هوک)
-PORT = int(os.getenv("PORT", "8443"))
-
-# شناسه‌ی ثابت چت (برای ارسال پیام‌های سیستمی اگر لازم باشد)
-CHAT_ID = os.getenv("CHAT_ID", "")
-
-# مسیر دیتابیس SQLite
-DB_PATH = os.getenv("DB_PATH", "news.db")
-
-# حالت اجرا: "webhook" یا "polling"
-MODE = os.getenv("MODE", "webhook")
+# این متغیرها حتما باید در محیط (Railway) ست شده باشند
+BOT_TOKEN   = os.environ["BOT_TOKEN"]
+WEBHOOK_URL = os.environ["WEBHOOK_URL"]
+CHANNEL_ID  = os.environ["CHANNEL_ID"]
+DB_PATH     = os.environ["DB_PATH"]
+MODE        = os.environ.get("MODE", "webhook")   # در صورت عدم تنظیم، webhook می‌ماند
+PORT        = int(os.environ.get("PORT", "8443"))  # پیش‌فرض 8443
