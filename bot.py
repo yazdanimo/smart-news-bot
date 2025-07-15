@@ -11,11 +11,12 @@ logging.basicConfig(
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # تنها یک هندلر برای لاگ و پردازش پست‌های کانال
+    # یک هندلر اصلی برای همه پیام‌های متنی
     app.add_handler(
         MessageHandler(filters.TEXT, debug_and_handle)
     )
 
+    # ست کردن وبهوک
     webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}"
     logging.info(f"🔗 ست وبهوک روی {webhook_url}")
 

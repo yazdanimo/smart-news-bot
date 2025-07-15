@@ -16,8 +16,10 @@ async def debug_and_handle(
     if not msg or not msg.text:
         return
 
+    # لاگ عمومی
     logging.info(f"[DEBUG] chat_id={msg.chat.id} ({msg.chat.type}): {msg.text}")
 
+    # اگر update.channel_post وجود دارد و از کانال ماست
     if update.channel_post and msg.chat.id == CHANNEL_ID:
         text = msg.text.strip()
         if is_duplicate(text):
