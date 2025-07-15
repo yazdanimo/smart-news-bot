@@ -1,10 +1,15 @@
 import logging
-
 from telegram.ext import ApplicationBuilder, MessageHandler, filters
 from handlers import debug_and_handle
-from config import BOT_TOKEN, WEBHOOK_URL, PORT
+from config import BOT_TOKEN, CHANNEL_ID, WEBHOOK_URL, PORT
 
+# اینجا اول basicConfig
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s: %(message)s",
+    level=logging.INFO
+)
 
+# حالا می‌شود INFOها را دید
 logging.info(
     f"Loaded config → BOT_TOKEN(len)={len(BOT_TOKEN)}, "
     f"CHANNEL_ID={CHANNEL_ID}, "
@@ -12,20 +17,10 @@ logging.info(
     f"PORT={PORT}"
 )
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s: %(message)s",
-    level=logging.INFO
-)
-
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(MessageHandler(filters.TEXT, debug_and_handle))
 
-    # یک هندلر اصلی برای همه پیام‌های متنی
-    app.add_handler(
-        MessageHandler(filters.TEXT, debug_and_handle)
-    )
-
-    # ست کردن وبهوک
     webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}"
     logging.info(f"🔗 ست وبهوک روی {webhook_url}")
 
