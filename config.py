@@ -1,9 +1,11 @@
 # config.py
 import os
 
-BOT_TOKEN = "7605984218:AAGRWqGvr5tWuT_uPaqbm5gzBa7mBhIMJn4"
-CHANNEL_ID = -1002685190359
-MODE = "webhook"
-WEBHOOK_URL = "https://web-production-259f1.up.railway.app"
-PORT = "8080"
-DB_PATH = "/tmp/messages.db"
+_raw = os.getenv("WEBHOOK_URL", "")
+# حذف هر s ) ؛ یا / اضافه در انتهای آدرس
+WEBHOOK_URL = _raw.rstrip(";/")
+BOT_TOKEN    = os.getenv("BOT_TOKEN")
+CHANNEL_ID   = int(os.getenv("CHANNEL_ID", "0"))
+MODE         = os.getenv("MODE", "webhook")
+PORT         = os.getenv("PORT", "8080")
+DB_PATH      = os.getenv("DB_PATH", "/tmp/messages.db")
