@@ -1,7 +1,6 @@
+# requirements.txt
 Flask==2.2.5
 python-telegram-bot==13.15
 gunicorn==20.1.0
-
-# اضافه‌شده برای رفع خطای ModuleNotFoundError
 urllib3==1.26.15
 six==1.16.0
