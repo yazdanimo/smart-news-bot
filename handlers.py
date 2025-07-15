@@ -1,32 +1,25 @@
-import os
-from telegram import Update, Bot
-from telegram.ext import Dispatcher, MessageHandler, Filters
-from flask import Flask, request
+import hashlib
+from telegram import Update
+from telegram.ext import CallbackContext, MessageHandler, Filters
+from db import is_duplicate, add_item
 
-TOKEN   = os.environ["TELEGRAM_TOKEN"]
-WEBHOOK = f"/{TOKEN}"
-PORT    = int(os.environ.get("PORT", 8443))
+def hash_text(text: str) -> str:
+    """از SHA256 برای تولید شناسه یکتا از متن خبر استفاده می‌کنیم."""
+    return hashlib.sha256(text.strip().encode('utf-8')).hexdigest()
 
-app = Flask(__name__)
-bot = Bot(token=TOKEN)
-dp  = Dispatcher(bot, update_queue=None, workers=0, use_context=True)
+def news_handler(update: Update, context: CallbackContext):
+    text = update.effective_message.text or ""
+    message_id = update.effective_message.message_id
+    chat_id = update.effective_chat.id
 
-# یک handler ساده برای تست
-def echo(update: Update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="🔔 دریافت شد!")
+    # اگر پیام متنی نیست از آن صرف‌نظر می‌کنیم
+    if not text:
+        return
 
-dp.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
-
-# این route باید دقیقاً برابر webhook URL باشد
-@app.route(WEBHOOK, methods=["POST"])
-def webhook_handler():
-    data = request.get_json(force=True)
-    update = Update.de_json(data, bot)
-    dp.process_update(update)
-    return "OK", 200
-
-if __name__ == "__main__":
-    # ثبت وب‌هوک
-    bot.set_webhook(f"https://YOUR_APP_DOMAIN/{TOKEN}")
-    # راه‌اندازی سرور
-    app.run(host="0.0.0.0", port=PORT)
+    item_hash = hash_text(text)
+    if is_duplicate(item_hash):
+        # خبر تکراریست؛ پیام را حذف می‌کنیم
+        context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+    else:
+        # خبر جدید است؛ در بانک ذخیره می‌کنیم
+        add_item(item_hash)
