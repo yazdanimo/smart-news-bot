@@ -1,25 +1,40 @@
-import logging
-from telegram.ext import ApplicationBuilder, MessageHandler, filters
-from handlers import debug_and_handle
-from config import BOT_TOKEN, CHANNEL_ID, WEBHOOK_URL, PORT
+# bot.py
 
-# اینجا اول basicConfig
+import logging
+from telegram.ext import (
+    ApplicationBuilder,
+    MessageHandler,
+    ChannelPostHandler,
+    filters
+)
+from handlers import debug_and_handle
+from config import BOT_TOKEN, WEBHOOK_URL, PORT
+
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
     level=logging.INFO
 )
 
-# حالا می‌شود INFOها را دید
 logging.info(
     f"Loaded config → BOT_TOKEN(len)={len(BOT_TOKEN)}, "
-    f"CHANNEL_ID={CHANNEL_ID}, "
-    f"WEBHOOK_URL={WEBHOOK_URL}, "
-    f"PORT={PORT}"
+    f"CHANNEL_ID={handlers.CHANNEL_ID}, "
+    f"WEBHOOK_URL={WEBHOOK_URL}, PORT={PORT}"
 )
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT, debug_and_handle))
+
+    # 1) هندلر پست‌های کانال
+    app.add_handler(
+        ChannelPostHandler(filters.TEXT, debug_and_handle),
+        0
+    )
+
+    # 2) هندلر سایر پیام‌های متنی (دایرکت/گروه)
+    app.add_handler(
+        MessageHandler(filters.TEXT, debug_and_handle),
+        1
+    )
 
     webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}"
     logging.info(f"🔗 ست وبهوک روی {webhook_url}")
