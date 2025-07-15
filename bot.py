@@ -1,45 +1,45 @@
 import logging
-import os
 from flask import Flask, request
 from telegram import Bot, Update
-from telegram.ext import Dispatcher, MessageHandler, Filters
-from config import TOKEN, BASE_URL, PORT
-from handlers import news_handler
-from db import init_db
+from telegram.ext import Dispatcher, Updater, MessageHandler, Filters
+from config import BOT_TOKEN, WEBHOOK_URL, PORT, MODE
 
-# تنظیمات لاگ
+# لاگ روی INFO
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# مقداردهی اولیه دیتابیس
+# دیتابیس را آماده می‌کند
+from db import init_db
 init_db()
 
-# ساخت اپ Flask و بات تلگرام
-app = Flask(__name__)
-bot = Bot(token=TOKEN)
+# در هر دو حالت، Dispatcher و handler را تعریف می‌کنیم
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot, update_queue=None, workers=4, use_context=True)
+dp.add_handler(MessageHandler(Filters.text & ~Filters.command, __import__('handlers').handlers.news_handler))
 
-# ثبت handler برای همه‌ی پیام‌های متنی (غیر از کامندها)
-dp.add_handler(MessageHandler(Filters.text & ~Filters.command, news_handler))
+if MODE.lower() == "polling":
+    # حالت Long Polling
+    updater = Updater(bot=bot, use_context=True)
+    updater.dispatcher = dp
 
-# مسیر وب‌هوک باید دقیقاً /<TOKEN> باشد
-WEBHOOK_PATH = f"/{TOKEN}"
+    logger.info("Starting in polling mode...")
+    updater.start_polling()
+    updater.idle()
 
-@app.route(WEBHOOK_PATH, methods=["POST"])
-def webhook_handler():
-    """
-    این endpoint داده‌ی آپدیت تلگرام را دریافت و پردازش می‌کند.
-    """
-    data = request.get_json(force=True)
-    update = Update.de_json(data, bot)
-    dp.process_update(update)
-    return "OK", 200
+else:
+    # حالت Webhook با Flask
+    app = Flask(__name__)
 
-if __name__ == "__main__":
-    # ثبت وب‌هوک در تلگرام
-    webhook_url = f"{BASE_URL}/{TOKEN}"
-    bot.set_webhook(webhook_url)
-    logger.info(f"Webhook set to: {webhook_url}")
+    @app.route(f"/{BOT_TOKEN}", methods=["POST"])
+    def webhook_handler():
+        data = request.get_json(force=True)
+        update = Update.de_json(data, bot)
+        dp.process_update(update)
+        return "OK", 200
 
-    # راه‌اندازی سرور Flask
-    app.run(host="0.0.0.0", port=PORT)
+    # ست کردن وب‌هوک در تلگرام
+    bot.set_webhook(WEBHOOK_URL)
+    logger.info(f"Webhook set to: {WEBHOOK_URL}")
+
+    if __name__ == "__main__":
+        app.run(host="0.0.0.0", port=PORT)
