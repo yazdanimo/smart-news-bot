@@ -1,41 +1,59 @@
+# handlers.py
 import logging
 from telegram import Update
-from telegram.ext import ContextTypes
-from config import CHANNEL_ID
-from db import is_duplicate, save_message
+from telegram.ext import ContextTypes, MessageHandler, filters
+from config import CHANNEL_ID, MODE
+from db import save_message, create_answer
 
-async def handle_channel_post(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+# پیکربندی لاگر
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s: %(message)s",
+    level=logging.DEBUG,
+)
+
+async def debug_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    ۱) لاگ پست‌های کانال (+ فیلتر CHANNEL_ID)
-    ۲) در صورت تکراری بودن حذف و در غیر این صورت ذخیره
+    چاپ تمام آپدیت‌های دریافتی برای دیباگ
     """
-    post = update.channel_post
-    if not post or not post.text or post.chat.id != CHANNEL_ID:
+    logger.debug("GOT UPDATE: %s", update.to_dict())
+
+async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    پردازش پست‌های کانال (یا پیام‌های خصوصی اگر خواستید)
+    """
+    # پست کانال یا پیام عادی
+    msg = update.channel_post or update.message
+    if not msg or msg.chat.id != CHANNEL_ID:
         return
 
-    text = post.text.strip()
-    logging.info(f"[DEBUG] chat_id={post.chat.id} (channel): {text}")
+    text = msg.text or msg.caption or ""
+    logger.debug(f"{CHANNEL_ID} (raw): {text}")
 
-    if is_duplicate(text):
-        await context.bot.delete_message(
-            chat_id=CHANNEL_ID,
-            message_id=post.message_id
-        )
-        logging.info(f"❌ حذف تکراری: {text}")
+    # ذخیره در دیتابیس
+    if save_message(text):
+        logger.info(f"✅ ثبت جدید: {text}")
     else:
-        save_message(text)
-        logging.info(f"✅ ثبت جدید: {text}")
+        logger.info(f"❌ حذف تکراری: {text}")
 
-async def debug_messages(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-    """
-    لاگ همهٔ پیام‌های متنی (دایرکت/گروه/کانال)
-    """
-    msg = update.message or update.channel_post
-    if msg and msg.text:
-        logging.info(f"[DEBUG] chat_id={msg.chat.id} ({msg.chat.type}): {msg.text}")
+    # Polling: حذف پیام اصلی
+    if MODE == "polling":
+        try:
+            await context.bot.delete_message(
+                chat_id=CHANNEL_ID,
+                message_id=msg.message_id
+            )
+        except Exception as e:
+            logger.error(f"delete_message failed: {e}")
+
+    # Webhook: ارسال پاسخ
+    else:
+        try:
+            answer = create_answer(text)
+            await context.bot.send_message(
+                chat_id=CHANNEL_ID,
+                text=answer,
+                reply_to_message_id=msg.message_id
+            )
+        except Exception as e:
+            logger.error(f"send_message failed: {e}")
