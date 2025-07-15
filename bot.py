@@ -13,21 +13,13 @@ logger = logging.getLogger(__name__)
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # 1) لاگ همه‌ی آپدیت‌ها
-    app.add_handler(
-        MessageHandler(filters.ALL, debug_all),
-        group=0
-    )
+    app.add_handler(MessageHandler(filters.ALL, debug_all), group=0)
 
-    # 2) فقط پست‌های کانال
     channel_filter = filters.Chat(CHANNEL_ID) & (
         filters.TEXT | filters.UpdateType.CHANNEL_POST
     )
-    app.add_handler(
-        MessageHandler(channel_filter, handle_all)
-    )
+    app.add_handler(MessageHandler(channel_filter, handle_all))
 
-    # 3) اجرا بر اساس MODE
     if MODE == "polling":
         logger.info("🔄 در حالت polling اجرا می‌شود")
         app.run_polling()
