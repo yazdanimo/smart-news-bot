@@ -12,32 +12,31 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def main():
+    # لاگ مقادیر پاک‌سازی‌شده برای اطمینان
+    logger.debug(f"Clean BOT_TOKEN   = {BOT_TOKEN!r}")
+    logger.debug(f"Clean WEBHOOK_URL = {WEBHOOK_URL!r}")
+
+    # ترکیب URL وبهوک
+    webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}"
+    logger.info(f"🔗 Setting webhook_url: {webhook_url!r}")
+
     # ساخت اپلیکیشن با توکن
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # 1) لاگ همه آپدیت‌ها برای دیباگ
-    app.add_handler(
-        MessageHandler(filters.ALL, debug_all),
-        group=0
-    )
+    # 1) لاگ همه‌ی آپدیت‌ها
+    app.add_handler(MessageHandler(filters.ALL, debug_all), group=0)
 
-    # 2) فیلتر برای پست‌های کانال
+    # 2) هندلر فقط برای پست‌های کانال
     channel_filter = filters.Chat(CHANNEL_ID) & (
         filters.TEXT | filters.UpdateType.CHANNEL_POST
     )
-    app.add_handler(
-        MessageHandler(channel_filter, handle_all)
-    )
+    app.add_handler(MessageHandler(channel_filter, handle_all))
 
-    # 3) انتخاب حالت اجرا
+    # 3) اجرای polling یا webhook
     if MODE == "polling":
         logger.info("🔄 در حالت polling اجرا می‌شود")
         app.run_polling()
     else:
-        # محاسبه و لاگ دقیق webhook_url برای اطمینان از عدم وجود سمی‌کالن اضافی
-        webhook_url = f"{WEBHOOK_URL.rstrip(';/')}/{BOT_TOKEN}"
-        logger.info(f"🔗 Setting webhook_url: {webhook_url!r}")
-
         logger.info("🚀 در حالت webhook اجرا می‌شود")
         app.run_webhook(
             listen="0.0.0.0",
