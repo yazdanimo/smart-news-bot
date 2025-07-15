@@ -1,7 +1,16 @@
 import logging
+
 from telegram.ext import ApplicationBuilder, MessageHandler, filters
 from handlers import debug_and_handle
 from config import BOT_TOKEN, WEBHOOK_URL, PORT
+
+
+logging.info(
+    f"Loaded config → BOT_TOKEN(len)={len(BOT_TOKEN)}, "
+    f"CHANNEL_ID={CHANNEL_ID}, "
+    f"WEBHOOK_URL={WEBHOOK_URL}, "
+    f"PORT={PORT}"
+)
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
